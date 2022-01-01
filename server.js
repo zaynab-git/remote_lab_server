@@ -14,6 +14,7 @@ const wss = new Server({ server });
 
 wss.on('connection', (ws) => {
   console.log('Client connected');
+  client.send('hi!');
   ws.on('close', () => console.log('Client disconnected'));
   ws.on('message', function(message) {
     wss.clients.forEach((client) => {
