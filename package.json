@@ -1,0 +1,19 @@
+{
+    "name": "server",
+    "version": "1.0.0",
+    "description": "remote lab project server",
+    "main": "server.js",
+    "scripts": {
+    "start": "node server.js"
+  },
+    "repository": {
+    "type": "git",
+    "url": ""
+  },
+    "author": "zeynab heydarzadeh",
+    "license": "ISC",
+    "bugs": {
+    "url": ""
+  },
+    "homepage": ""
+  }
