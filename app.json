@@ -1,6 +1,0 @@
-{
-    "name": "Node.js WebSocket Example",
-    "description": "Part of the Using WebSockets on Heroku Tutorial",
-    "repository": "https://github.com/zaynab-git/remote_lab_server",
-    "keywords": ["node", "websocket"]
-  }
