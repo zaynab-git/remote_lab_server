@@ -34,7 +34,7 @@
 
 const express = require('express');
 const WebSocket = require('ws');
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 
 const path = require('path');
@@ -45,56 +45,49 @@ const server = express()
     });
 
 
+var modbus = require("modbus-stream");
+const wss = new WebSocket.Server({ server });
 
-      
-// const wss = new WebSocket.Server({ server });
-// wss.on('connection', async (ws) => {
 
-  var modbus = require("modbus-stream");
 
-  modbus.tcp.connect(502, "127.0.0.1", (err, connection) => {
 
-            function myLoop() {         //  create a loop function
-              setTimeout(function() {   //  call a 3s setTimeout when the loop is called
-                connection.readCoils({ address: 1, quantity: 1, extra: { unitId: 1 } }, (err, res) => {
-                    console.log(res.response.data[0])
-                });                      //  increment the counter
-                  myLoop();             //  ..  again which will trigger another 
-              }, 1000)
+modbus.tcp.connect(502, "127.0.0.1", (err, connection) => {
+
+    function myLoop() {         
+      setTimeout(function() {   
+        connection.readCoils({ address: 1, quantity: 1, extra: { unitId: 1 } }, (err, res) => {
+            console.log(res.response.data[0])
+        });                     
+          myLoop();             
+      }, 1000)
+    }
+    
+    myLoop();   
+
+    wss.on('connection', async (ws) => {
+        
+        console.log('Client connected');
+        ws.on('close', () => console.log('Client disconnected'));
+        
+        ws.on('message', function(message) {
+            let m
+            try {
+            m = JSON.parse(message)
+            } catch (e) {
+            console.log(e)
+            return
             }
+            if (typeof m !== 'object' || typeof m.topic !== 'string' || m.payload === undefined) {
+            console.log("message is missing topic and/or payload")
+            return
+            }
+
             
-        myLoop();          
-  });
+            connection.writeSingleCoil({ address: parseInt(m.topic), value: 1 }, (err, info) => {
+                console.log("response", info.response);
+                });
+        });
+    });
 
 
- 
-
-
-//   console.log('Client connected');
-//   ws.on('close', () => console.log('Client disconnected'));
-  
-//   ws.on('message', function(message) {
-//     let m
-//     try {
-//       m = JSON.parse(message)
-//     } catch (e) {
-//       console.log(e)
-//       return
-//     }
-//     if (typeof m !== 'object' || typeof m.topic !== 'string' || m.payload === undefined) {
-//       console.log("message is missing topic and/or payload")
-//       return
-//     }
-
-//     ws.send(message)
-
-//     if (m.topic == '1' && m.payload =='ON') {
-//       // readmodbus()
-//       console.log(tcpDevice.stream)
-
-//     }
-
-//     console.log(m)
-//   });
-
-// });
+});
