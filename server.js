@@ -46,35 +46,28 @@ const server = express()
 
 
 
+      
 // const wss = new WebSocket.Server({ server });
 // wss.on('connection', async (ws) => {
 
   var modbus = require("modbus-stream");
 
   modbus.tcp.connect(502, "127.0.0.1", (err, connection) => {
-      if (err) throw err;
-//     let preres = 0;  
-//     while (true){
-      connection.readCoils({ address: 1, quantity: 1, extra: { unitId: 1 } }, (err, res) => {
-//         // if (err) throw err;
 
-//         if (res.response.data[0] != preres) {
-//           console.log(res.response.data[0]); 
-//           var data = (res.response.data[0] = 0 ? 'OFF' : 'ON');
-//           ws.send(JSON.stringify({topic: '1', payload: data}))
-//         }
-        console.log(res.response.data[0])
-//         preres = res.response.data[0];
-
-    });
-});
-
-//     }
-      
-//   });
+            function myLoop() {         //  create a loop function
+              setTimeout(function() {   //  call a 3s setTimeout when the loop is called
+                connection.readCoils({ address: 1, quantity: 1, extra: { unitId: 1 } }, (err, res) => {
+                    console.log(res.response.data[0])
+                });                      //  increment the counter
+                  myLoop();             //  ..  again which will trigger another 
+              }, 1000)
+            }
+            
+        myLoop();          
+  });
 
 
-
+ 
 
 
 //   console.log('Client connected');
