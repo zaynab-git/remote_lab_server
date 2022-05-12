@@ -1,37 +1,3 @@
-// 'use strict';
-
-// const express = require('express');
-// const { Server } = require('ws');
-
-// const PORT = 8080;
-// const INDEX = '/index.html';
-
-// const server = express()
-//   .use((req, res) => res.sendFile(INDEX, { root: __dirname }))
-//   .listen(PORT, () => console.log(`Listening on ${PORT}`));
-
-// const wss = new Server({ server });
-
-// wss.on('connection', (ws) => {
-//   console.log('Client connected');
-//   wss.clients.forEach((client) => {
-//     client.send('hi!');
-// });
-//   ws.on('close', () => console.log('Client disconnected'));
-//   ws.on('message', function(message) {
-//     wss.clients.forEach((client) => {
-//         client.send('hi!');
-//     });
-//   });
-
-// });
-
-
-
-
-
-
-
 const express = require('express');
 const WebSocket = require('ws');
 const PORT = process.env.PORT || 8080;
@@ -53,20 +19,24 @@ const wss = new WebSocket.Server({ server });
 
 modbus.tcp.connect(502, "127.0.0.1", (err, connection) => {
 
-    function myLoop() {         
-      setTimeout(function() {   
-        connection.readCoils({ address: 1, quantity: 1, extra: { unitId: 1 } }, (err, res) => {
-            console.log(res.response.data[0])
-        });                     
-          myLoop();             
-      }, 1000)
-    }
-    
-    myLoop();   
+    function myLoop() {   
+        const [client] = wss.clients      
+        setTimeout(function() {   
+          connection.readCoils({ address: 0, quantity: 8, extra: { unitId: 1 } }, (err, res) => {
+              res.response.data.forEach((value, index) => {
+                client.send(JSON.stringify({topic: index.toString(), payload: value}));
+              });
+          });                     
+            myLoop();             
+        }, 1000)
+      }
 
-    wss.on('connection', async (ws) => {
-        
+    wss.on('connection', (ws) => {
+
         console.log('Client connected');
+
+        myLoop();   
+
         ws.on('close', () => console.log('Client disconnected'));
         
         ws.on('message', function(message) {
@@ -81,12 +51,13 @@ modbus.tcp.connect(502, "127.0.0.1", (err, connection) => {
             console.log("message is missing topic and/or payload")
             return
             }
-
-            
-            connection.writeSingleCoil({ address: parseInt(m.topic), value: 1 }, (err, info) => {
+            ws.send(message)
+            connection.writeSingleCoil({ address: parseInt(m.topic), value: m.payload}, (err, info) => {
                 console.log("response", info.response);
                 });
         });
+
+
     });
 
 
