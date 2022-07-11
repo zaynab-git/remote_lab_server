@@ -5,41 +5,81 @@ const PORT = process.env.PORT || 8080;
 
 const path = require('path');
 const server = express()
-    .use(express.static(path.join(__dirname, '../flexdash-main/dist')))
+    .use(express.static(path.join(__dirname, '../flexdash/dist')))
     .listen(PORT, () => {
         console.log(`Server listening on port ${PORT}!`)
     });
 
 
-var modbus = require("modbus-stream");
+var coils = [0,0,0,0,0,0,0,0]
+var discrete = [0,0,0,0,0,0,0,0]
+
+const ModbusRTU = require("modbus-serial");
+const client = new ModbusRTU();
+client.connectRTUBuffered("/dev/ttyACM0", { baudRate: 115200 }) ;
+client.setID(1);
+
 const wss = new WebSocket.Server({ server });
-
-
-
-
-modbus.tcp.connect(502, "127.0.0.1", (err, connection) => {
-
-    function myLoop() {   
-        const [client] = wss.clients      
-        setTimeout(function() {   
-          connection.readCoils({ address: 0, quantity: 8, extra: { unitId: 1 } }, (err, res) => {
-              res.response.data.forEach((value, index) => {
-                client.send(JSON.stringify({topic: index.toString(), payload: value}));
-              });
-          });                     
-            myLoop();             
-        }, 1000)
-      }
 
     wss.on('connection', (ws) => {
 
-        console.log('Client connected');
+      setInterval(function() {
 
-        myLoop();   
+        client.writeCoils(0, coils)
 
-        ws.on('close', () => console.log('Client disconnected'));
+      }, 1003);
+
+      setInterval(function() {
+
+        client.writeRegisters(0, discrete)
+
+      }, 1019);
+
+      setInterval(function() {
+        client.readDiscreteInputs(0, 8, function(err, data) {
+            if (err) {
+              console.log(err);
+            }
+            if (data) {
+              console.log(data.data);
+            }
+
+        });
         
+      }, 1037);
+
+      setInterval(function() {
+        client.readInputRegisters(0, 3, function(err, data) {
+            if (err) {
+              console.log(err);
+            }
+            if (data) {
+              console.log(data.data);
+              ws.send(JSON.stringify({topic: "AnalogOutput", payload: data.data[0]}));
+            }
+
+        });
+        
+      }, 1059);
+
+      setInterval(function() {
+
+          client.readCoils(0, 8, function(err, data) {
+            if (err) {
+              console.log(err);
+            }
+            if (data) {
+              console.log(data);
+            }
+
+          });
+      }, 1079);
+      
+
+      //   console.log('Client connected');
+
         ws.on('message', function(message) {
+          console.log(message)
             let m
             try {
             m = JSON.parse(message)
@@ -52,13 +92,12 @@ modbus.tcp.connect(502, "127.0.0.1", (err, connection) => {
             return
             }
             ws.send(message)
-            connection.writeSingleCoil({ address: parseInt(m.topic), value: m.payload}, (err, info) => {
-                console.log("response", info.response);
-                });
+            coils[parseInt(m.topic)] = parseInt(m.payload)
+            discrete[parseInt(m.topic)] = parseInt(m.payload)
+
         });
 
+        ws.on('close', () => console.log('Client disconnected'));
 
     });
 
-
-});
