@@ -6,7 +6,7 @@ const PORT = process.env.PORT || 8080;
 const path = require('path');
 const server = express()
     .use(express.static(path.join(__dirname, '../flexdash/dist')))
-    .listen(PORT, () => {
+    .listen(PORT, "172.23.155.158", () => {
         console.log(`Server listening on port ${PORT}!`)
     });
 
@@ -23,27 +23,41 @@ const wss = new WebSocket.Server({ server });
 
     wss.on('connection', (ws) => {
 
+      // setInterval(function() {
+
+      //   client.writeCoils(0, coils)
+
+      // }, 1003);
+
+      // setInterval(function() {
+
+      //   client.writeRegisters(0, discrete)
+
+      // }, 1019);
+
       setInterval(function() {
-
-        client.writeCoils(0, coils)
-
-      }, 1003);
-
-      setInterval(function() {
-
-        client.writeRegisters(0, discrete)
-
-      }, 1019);
-
-      setInterval(function() {
-        client.readDiscreteInputs(0, 8, function(err, data) {
+        client.readDiscreteInputs(8, 8, function(err, data) {
             if (err) {
               console.log(err);
             }
             if (data) {
-              console.log(data.data);
+              let inp0 = data.data[0] == true ? 1 : 0
+              let inp1 = data.data[1] == true ? 1 : 0
+              let inp2 = data.data[2] == true ? 1 : 0
+              let inp3 = data.data[3] == true ? 1 : 0
+              let inp4 = data.data[4] == true ? 1 : 0
+              let inp5 = data.data[5] == true ? 1 : 0
+              let inp6 = data.data[6] == true ? 1 : 0
+              let inp7 = data.data[7] == true ? 1 : 0
+              ws.send(JSON.stringify({topic: "0", payload: inp0}));
+              ws.send(JSON.stringify({topic: "1", payload: inp1}));
+              ws.send(JSON.stringify({topic: "2", payload: inp2}));
+              ws.send(JSON.stringify({topic: "3", payload: inp3}));
+              ws.send(JSON.stringify({topic: "4", payload: inp4}));
+              ws.send(JSON.stringify({topic: "5", payload: inp5}));
+              ws.send(JSON.stringify({topic: "6", payload: inp6}));
+              ws.send(JSON.stringify({topic: "7", payload: inp7}));
             }
-
         });
         
       }, 1037);
@@ -54,7 +68,7 @@ const wss = new WebSocket.Server({ server });
               console.log(err);
             }
             if (data) {
-              console.log(data.data);
+              // console.log(data.data);
               ws.send(JSON.stringify({topic: "AnalogOutput", payload: data.data[0]}));
             }
 
@@ -62,24 +76,23 @@ const wss = new WebSocket.Server({ server });
         
       }, 1059);
 
-      setInterval(function() {
+      // setInterval(function() {
 
-          client.readCoils(0, 8, function(err, data) {
-            if (err) {
-              console.log(err);
-            }
-            if (data) {
-              console.log(data);
-            }
+      //     client.readCoils(0, 8, function(err, data) {
+      //       if (err) {
+      //         console.log(err);
+      //       }
+      //       if (data) {
+      //         console.log(data);
+      //       }
 
-          });
-      }, 1079);
+      //     });
+      // }, 1079);
       
 
       //   console.log('Client connected');
 
         ws.on('message', function(message) {
-          console.log(message)
             let m
             try {
             m = JSON.parse(message)
@@ -100,4 +113,5 @@ const wss = new WebSocket.Server({ server });
         ws.on('close', () => console.log('Client disconnected'));
 
     });
+
 
